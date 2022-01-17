@@ -1,2 +1,2 @@
-# db.json
+# odb.json
  Database made with JSON
