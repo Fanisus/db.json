@@ -4,18 +4,6 @@ module.exports = class Database {
     constructor(filePath, options) {
         file = filePath || "./db.json";
         this.options = options || {};
-
-        if (this.options.snapshots && this.options.snapshots.enabled) {
-            const path = this.options.snapshots.path || './db-backups/';
-            if (!fs.existsSync(path)) {
-                fs.mkdirSync(path);
-            }
-            console.log(this.options.snapshots.path)
-            return
-            setInterval(() => {
-                fs.copyFileSync(file, path)
-            }, (this.options.snapshots.interval || 86400000));
-        }
         if (!fs.existsSync(file)) {
             fs.writeFileSync(file, "{}", "utf-8");
         }
