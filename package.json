@@ -1,0 +1,14 @@
+{
+  "name": "db.json",
+  "version": "1.0.0",
+  "description": "Database using JSON",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Fanisus",
+  "license": "ISC",
+  "dependencies": {
+    "fs-extra": "^10.0.0"
+  }
+}
