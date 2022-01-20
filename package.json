@@ -1,15 +1,8 @@
 {
   "name": "odb.json",
-  "version": "1.0.0",
+  "version": "1.1.4",
   "description": "Database made with JSON",
   "main": "index.js",
-  "dependencies": {
-    "graceful-fs": "^4.2.9",
-    "fs-extra": "^10.0.0",
-    "universalify": "^2.0.0",
-    "jsonfile": "^6.1.0"
-  },
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -17,6 +10,13 @@
     "type": "git",
     "url": "git+https://github.com/Fanisus/odb.json.git"
   },
+  "keywords": [
+    "database",
+    "json",
+    "json-db",
+    "db",
+    "json.db"
+  ],
   "author": "Fanisus",
   "license": "ISC",
   "bugs": {
