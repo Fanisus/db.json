@@ -1,23 +1,40 @@
 const fs = require('fs');
 const http = require('http');
-const events = require('events');
+
+const readline = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    historySize: 1000,
+    removeHistoryDuplicates: true
+})
 
 let file;
-let backupfilename;
-let backuplocation;
 
 class Database {
-    constructor(filePath, options) {
-        file = filePath || "./db.json";
+    constructor(folderPath, options) {
+        if (!folderPath) throw new Error('No folder path provided');
+        if (!folderPath.endsWith('/')) {
+            folderPath += '/'
+        }
         this.options = options || {};
-
+        file = folderPath + this.options.file || "./db.json";
+        if (!fs.existsSync(folderPath)) {
+            fs.mkdirSync(folderPath, { recursive: true })
+        }
         if (!fs.existsSync(file)) {
             fs.writeFileSync(file, "{}", "utf-8");
         }
-        if (this.options.backup && this.options.backup.enabled) {
-            backupfilename = this.options.backup.name || 'Backup.json';
-            if (!backupfilename.includes('.')) return console.error(backupfilename, "must contain the file extension")
-            backuplocation = this.options.backup.path || './backups/';
+        this.object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
+        if (this.options?.memory?.enabled) {
+            if (!this.options.memory.saveinterval || isNaN(this.options.memory.saveinterval)) throw new Error("No saveinterval provided or save interval is not a number");
+            setInterval(() => {
+                fs.writeFileSync(file, JSON.stringify(this.object, null, 2), { encoding: 'utf-8' })
+            }, this.options.memory.saveinterval)
+        }
+        if (this.options?.backup?.enabled) {
+            let backupfilename = this.options.backup.name || `${new Date().toUTCString()}_Backup.json}`;
+            if (!backupfilename.includes('.')) throw new Error(backupfilename, "must contain the file extension")
+            let backuplocation = this.options.backup.path || './Database-Backups/';
             if (!fs.existsSync(backuplocation)) {
                 fs.mkdirSync(backuplocation);
             }
@@ -28,119 +45,418 @@ class Database {
                 fs.writeFileSync(backuplocation + `${backupfilename}`, fs.readFileSync(file, { encoding: 'utf-8' }))
             }, (this.options.backup.interval || 86400000));
         }
+        if (this.options.cli) {
+            let cli = true;
+            console.log(`CLI for ${file} is Enabled. Use ${file} <command> <key> <value> to interact with the database.`)
+            readline.on('line', async (line) => {
+                let args = line.split(' ');
+                if (args[0].toLowerCase() == 'help') {
+                    console.log('-------------------------------------')
+                    console.log("Commands:")
+                    console.log('---------- -_- ----------')
+                    console.log("<file> set <key> <value>")
+                    console.log("<file> get <key>")
+                    console.log("<file> push <key> <value>")
+                    console.log("<file> has <key>")
+                    console.log("<file> add <key> <value>")
+                    console.log("<file> subtract <key> <value>")
+                    console.log("<file> type <key>")
+                    console.log("<file> keys <key>")
+                    console.log("<file> values <key>")
+                    console.log("<file> clear")
+                    console.log("<file> save")
+                    console.log("<file> size")
+                    console.log("<file> reload")
+                    console.log("<file> data")
+                    console.log("cli")
+                    console.log('-------------------------------------')
+                }
+                else if (args[0].toLowerCase() == 'dbprocesses' || args[0].toLowerCase() == 'cli') {
+                    console.log(`CLI for ${file} is ${cli ? 'Enabled' : 'Disabled'}`)
+                }
+                else if (args[0] == '-_-') {
+                    console.log('-_-')
+                }
+                else if (args[0] == file) {
+                    if (cli == true) {
+                        if (args[1].toLowerCase() == 'set') {
+                            this.set(args[2], args[3])
+                        }
+                        else if (args[1].toLowerCase() == 'get') {
+                            console.log(await this.get(args[2]))
+                        }
+                        else if (args[1].toLowerCase() == 'push') {
+                            this.push(args[2], args[3])
+                        }
+                        else if (args[1].toLowerCase() == 'has') {
+                            console.log(await this.has(args[2]))
+                        }
+                        else if (args[1].toLowerCase() == 'add') {
+                            this.add(args[2], args[3])
+                        }
+                        else if (args[1].toLowerCase() == 'subtract') {
+                            this.subtract(args[2], args[3])
+                        }
+                        else if (args[1].toLowerCase() == 'type') {
+                            console.log(await this.type(args[2]))
+                        }
+                        else if (args[1].toLowerCase() == 'keys') {
+                            console.log(await this.keys(args[2]))
+                        }
+                        else if (args[1].toLowerCase() == 'values') {
+                            console.log(await this.values(args[2]))
+                        }
+                        else if (args[1].toLowerCase() == 'remove') {
+                            this.remove(args[2], args[3])
+                        }
+                        else if (args[1].toLowerCase() == 'delete') {
+                            this.delete(args[2])
+                        }
+                        else if (args[1].toLowerCase() == 'clear') {
+                            this.clear()
+                        }
+                        else if (args[1].toLowerCase() == 'save') {
+                            fs.writeFileSync(file, JSON.stringify(this.object, null, 2), { encoding: 'utf-8' })
+                        }
+                        else if (args[1].toLowerCase() == 'size') {
+                            console.log(await this.size())
+                        }
+                        else if (args[1].toLowerCase() == 'reload') {
+                            this.reload()
+                        }
+                        else if (args[1].toLowerCase() == 'data') {
+                            console.log(this.object)
+                        }
+                        else if (args[1].toLowerCase() == 'disable') {
+                            cli = false;
+                            console.log(`CLI for ${file} is Disabled`)
+                        }
+                    }
+                    else {
+                        if (args[1].toLowerCase() == 'enable') {
+                            cli = true;
+                            console.log(`CLI for ${file} is Enabled`)
+                        }
+                    }
+                }
+            }).once("close", () => {
+                console.log("CLI for " + file + " has been Ended")
+            })
+        }
     }
-    set(key, value) {
-        new Promise((resolve, reject) => {
+
+    async set(key, value) {
+        await new Promise((resolve, reject) => {
             if (!key) throw new Error('No key provided');
-            if (!value) throw new Error("No value provided")
-            let object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
-            object[key] = value
-            fs.writeFileSync(file, JSON.stringify(object, null, 2), 'utf-8')
+            if (value == undefined) throw new Error("No value provided")
+            if (!this.options?.memory?.enabled) this.object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
+            if (this.options.deep) {
+                const properties = key.split('.');
+                let index = 0
+                let dot;
+                dot = this.object
+                for (; index < properties.length - 1; ++index) {
+                    if (properties.length - 1 == index) {
+                        dot = dot[properties[index]] = value
+                    }
+                    if (typeof dot[properties[index]] != typeof Object()) {
+                        dot = dot[properties[index]] = {}
+                    }
+                    else {
+                        dot = dot[properties[index]]
+                    }
+                }
+                dot[properties[index]] = value
+            }
+            else {
+                this.object[key] = value
+            }
+            if (!this.options?.memory?.enabled) fs.writeFileSync(file, JSON.stringify(this.object, null, 2), { encoding: 'utf-8' })
             resolve()
         })
     }
-    get(key) {
-        return new Promise((resolve, reject) => {
+    async get(key) {
+        return await new Promise((resolve, reject) => {
             if (!key) throw new Error('No key provided');
-            let object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
-            resolve(object[key]);
+            if (!this.options?.memory?.enabled) this.object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
+            if (this.options.deep) {
+                const properties = key.split('.');
+                let index = 0
+                let dot;
+                dot = this.object
+                for (; index < properties.length; ++index) {
+                    try {
+                        dot = dot[properties[index]]
+                    }
+                    catch (e) {
+                        return resolve(undefined)
+                    }
+                }
+                resolve(dot)
+            }
+            else {
+                resolve(this.object[key]);
+            }
         })
     }
-    push(key, value) {
-        new Promise((resolve, reject) => {
+    async push(key, value) {
+        await new Promise((resolve, reject) => {
             if (!key) throw new Error('No key provided');
-            if (!value) throw new Error("No value provided")
-            let object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
-            if (!object[key]) object[key] = [];
-            if (!Array.isArray(object[key])) object[key] = [];
-            object[key].push(value)
-            fs.writeFileSync(file, JSON.stringify(object, null, 2), 'utf-8')
+            if (value == undefined) throw new Error("No value provided")
+            if (!this.options?.memory?.enabled) this.object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
+            if (this.options.deep) {
+                const properties = key.split('.');
+                let index = 0
+                let dot;
+                dot = this.object
+                for (; index < properties.length - 1; ++index) {
+                    if (properties.length - 1 == index) {
+                        dot = dot[properties[index]] = value
+                    }
+                    if (typeof dot[properties[index]] != typeof Object()) {
+                        dot = dot[properties[index]] = {}
+                    }
+                    else {
+                        dot = dot[properties[index]]
+                    }
+                }
+                if (Array.isArray(dot[properties[index]])) {
+                    dot[properties[index]].push(value)
+                }
+                else {
+                    dot[properties[index]] = []
+                    dot[properties[index]].push(value)
+                }
+            }
+            else {
+                if (!this.object[key]) this.object[key] = [];
+                if (!Array.isArray(this.object[key])) this.object[key] = [];
+                this.object[key].push(value)
+            }
+            if (!this.options?.memory?.enabled) fs.writeFileSync(file, JSON.stringify(this.object, null, 2), { encoding: 'utf-8' })
             resolve()
         })
     }
-    has(key) {
-        return new Promise((resolve, reject) => {
+    async has(key) {
+        return await new Promise((resolve, reject) => {
             if (!key) throw new Error('No key provided');
-            let object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
-            resolve(Boolean(object[key]));
+            if (!this.options?.memory?.enabled) this.object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
+            if (this.options.deep) {
+                const properties = key.split('.');
+                let index = 0
+                let dot;
+                dot = this.object
+                for (; index < properties.length; ++index) {
+                    try {
+                        dot = dot[properties[index]]
+                    }
+                    catch (e) {
+                        return resolve(false)
+                    }
+                }
+                resolve(Boolean(dot))
+            }
+            else {
+                resolve(Boolean(this.object[key]));
+            }
         })
     }
-    add(key, count) {
-        new Promise((resolve, reject) => {
+    async add(key, value) {
+        await new Promise((resolve, reject) => {
             if (!key) throw new Error('No key provided');
-            if (!count) throw new Error("No count provided")
-            let object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
-            if (!object[key]) object[key] = 0
-            object[key] += count
-            fs.writeFileSync(file, JSON.stringify(object, null, 2), 'utf-8')
+            if (value == undefined) throw new Error("No value provided")
+            if (!this.options?.memory?.enabled) this.object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
+            if (this.options.deep) {
+                const properties = key.split('.');
+                let index = 0
+                let dot;
+                dot = this.object
+                for (; index < properties.length - 1; ++index) {
+                    if (typeof dot[properties[index]] != typeof Object()) {
+                        dot = dot[properties[index]] = {}
+                    }
+                    else {
+                        if (isNaN(dot[properties[index]])) {
+                            dot = dot[properties[index]]
+                        }
+                        else dot[properties[index]] = 0
+                    }
+                }
+                if (isNaN(dot[properties[index]])) dot[properties[index]] = 0
+                dot[properties[index]] += value
+            }
+            else {
+                this.object[key] += value
+            }
+            if (!this.options?.memory?.enabled) fs.writeFileSync(file, JSON.stringify(this.object, null, 2), { encoding: 'utf-8' })
+
             resolve()
         })
     }
-    subtract(key, count) {
-        new Promise((resolve, reject) => {
+    async subtract(key, count) {
+        await new Promise((resolve, reject) => {
             if (!key) throw new Error('No key provided');
-            if (!count) throw new Error("No count provided")
-            let object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
-            if (!object[key]) object[key] = 0
-            object[key] -= count
-            fs.writeFileSync(file, JSON.stringify(object, null, 2), 'utf-8')
+            if (value == undefined) throw new Error("No value provided")
+            if (!this.options?.memory?.enabled) this.object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
+            if (this.options.deep) {
+                const properties = key.split('.');
+                let index = 0
+                let dot;
+                dot = this.object
+                for (; index < properties.length - 1; ++index) {
+                    if (typeof dot[properties[index]] != typeof Object()) {
+                        dot = dot[properties[index]] = {}
+                    }
+                    else {
+                        if (isNaN(dot[properties[index]])) {
+                            dot = dot[properties[index]]
+                        }
+                        else dot[properties[index]] = 0
+                    }
+                }
+                if (isNaN(dot[properties[index]])) dot[properties[index]] = 0
+                dot[properties[index]] -= value
+            }
+            else {
+                this.object[key] -= value
+            }
+            if (!this.options?.memory?.enabled) fs.writeFileSync(file, JSON.stringify(this.object, null, 2), { encoding: 'utf-8' })
+
             resolve()
         })
     }
-    type(key) {
-        return new Promise((resolve, reject) => {
+    async type(key) {
+        return await new Promise((resolve, reject) => {
             if (!key) throw new Error('No key provided');
-            let object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
-            resolve(typeof object[key])
+            if (!this.options?.memory?.enabled) this.object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
+            if (this.options.deep) {
+                const properties = key.split('.');
+                let index = 0
+                let dot;
+                dot = this.object
+                for (; index < properties.length; ++index) {
+                    dot = dot[properties[index]]
+                }
+                resolve(typeof dot)
+            }
+            else {
+                resolve(typeof this.object[key]);
+            }
         })
     }
-    keys() {
-        return new Promise((resolve, reject) => {
-            let object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
-            resolve(Object.keys(object))
+    async keys() {
+        return await new Promise((resolve, reject) => {
+            if (!this.options?.memory?.enabled) this.object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
+            resolve(Object.keys(this.object))
         })
     }
-    values() {
-        return new Promise((resolve, reject) => {
-            let object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
-            resolve(Object.values(object))
+    async values() {
+        return await new Promise((resolve, reject) => {
+            if (!this.options?.memory?.enabled) this.object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
+            resolve(Object.values(this.object))
         })
     }
-    remove(key, value) {
-        new Promise((resolve, reject) => {
+    async remove(key, value) {
+        await new Promise((resolve, reject) => {
             if (!key) throw new Error('No key provided');
-            let object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
-            if (!Array.isArray(object[key])) throw new Error(`Given key is not an array`)
-            if (object[key].indexOf(value) == -1) return
-            object[key].splice(object[key].indexOf(value), 1)
-            fs.writeFileSync(file, JSON.stringify(object, null, 2), 'utf-8')
+            if (value == undefined) throw new Error("No value provided")
+            if (!this.options?.memory?.enabled) this.object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
+            if (this.options.deep) {
+                const properties = key.split('.');
+                let index = 0
+                let dot;
+                dot = this.object
+                for (; index < properties.length - 1; ++index) {
+                    if (properties.length - 1 == index) {
+                        dot = dot[properties[index]] = value
+                    }
+                    if (typeof dot[properties[index]] != typeof Object()) {
+                        dot = dot[properties[index]] = {}
+                    }
+                    else {
+                        dot = dot[properties[index]]
+                    }
+                }
+                if (!Array.isArray(dot[properties[index]])) throw new Error(`Given key is not an array`)
+                if (dot[properties[index]].indexOf(value) == -1) throw new Error(`Value ${value} not found in array`)
+                dot[properties[index]].splice(dot[properties[index]].indexOf(value), 1)
+            }
+            else {
+                if (!Array.isArray(this.object[key])) throw new Error(`Given key is not an array`)
+                if (this.object[key].indexOf(value) == -1) throw new Error(`Value ${value} not found in array`)
+                this.object[key].splice(this.object[key].indexOf(value), 1)
+            }
+            if (!this.options?.memory?.enabled) fs.writeFileSync(file, JSON.stringify(this.object, null, 2), { encoding: 'utf-8' })
             resolve()
         })
     }
-    delete(key) {
-        new Promise((resolve, reject) => {
+    async delete(key) {
+        await new Promise((resolve, reject) => {
             if (!key) throw new Error('No key provided');
-            let object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
-            delete object[key]
-            fs.writeFileSync(file, JSON.stringify(object, null, 2), 'utf-8')
+            if (!this.options?.memory?.enabled) this.object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
+            if (this.options.deep) {
+                const properties = key.split('.');
+                let index = 0
+                let dot;
+                dot = this.object
+                for (; index < properties.length - 1; ++index) {
+                    if (typeof dot[properties[index]] != typeof Object()) {
+                        dot = dot[properties[index]] = {}
+                        if (!this.options?.memory?.enabled) fs.writeFileSync(file, JSON.stringify(this.object, null, 2), { encoding: 'utf-8' })
+                    }
+                    else {
+                        dot = dot[properties[index]]
+                    }
+                }
+                delete dot[properties[index]]
+            }
+            else {
+                delete this.object[key]
+            }
+            if (!this.options?.memory?.enabled) fs.writeFileSync(file, JSON.stringify(this.object, null, 2), { encoding: 'utf-8' })
             resolve()
         })
     }
-    clear() {
-        new Promise((resolve, reject) => {
-            fs.writeFileSync(file, "{}", "utf-8")
+    async clear() {
+        await new Promise((resolve, reject) => {
+            this.object = {}
+            if (!this.options?.memory?.enabled) fs.writeFileSync(file, JSON.stringify(this.object, null, 2), { encoding: 'utf-8' })
             resolve()
+        })
+    }
+    async save() {
+        await new Promise((resolve, reject) => {
+            fs.writeFileSync(file, JSON.stringify(this.object, null, 2), { encoding: 'utf-8' })
+            resolve()
+        })
+    }
+    async size() {
+        return await new Promise((resolve, reject) => {
+            resolve(fs.statSync(file).size)
+        })
+    }
+    async reload() {
+        await new Promise((resolve, reject) => {
+            this.object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
+            resolve()
+        })
+    }
+    async data() {
+        return await new Promise((resolve, reject) => {
+            if (!this.options?.memory?.enabled) this.object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
+            resolve(this.object)
         })
     }
 }
+
 class Server {
-    constructor(path, options) {
-        this.path = path || './Server-Database/';
+    constructor(FolderPath, options) {
+        this.path = FolderPath || './Server-Database/';
         this.options = options || {};
         if (this.options == null || this.options == undefined) this.options = {};
         this.port = this.options.port || 8000;
-        if (!fs.existsSync(path)) {
-            fs.mkdirSync(path, { recursive: true })
+        if (!fs.existsSync(this.path)) {
+            fs.mkdirSync(this.path, { recursive: true })
         }
         if (!this.path.endsWith('/')) this.path = this.path + '/'
         if (this.options.port == null || !this.options.port) console.log(`Port is not specified in options. Using port ${this.port}`)
@@ -151,7 +467,7 @@ class Server {
             let data = req.headers;
             let file = this.path + data.username + '/' + data.password + '/' + data.dbname + '.json';
             if (!fs.existsSync(file)) {
-                fs.mkdirSync(path + data.username + '/' + data.password + '/', { recursive: true })
+                fs.mkdirSync(this.path + data.username + '/' + data.password + '/', { recursive: true })
                 fs.writeFileSync(file, "{}", 'utf-8')
             }
             console.log(data);
@@ -162,14 +478,14 @@ class Server {
             switch (data.command) {
                 case 'set':
                     if (!key) return console.log('No key provided');
-                    if (!value) return console.log("No value provided");
+                    if (value == undefined) return console.log("No value provided");
                     object[key] = value;
                     fs.writeFileSync(file, JSON.stringify(object, null, 2), 'utf-8');
                     res.writeHead(200);
                     res.end();
                     break;
                 case 'get':
-                    if (!fs.existsSync(path)) return console.log('File not found');
+                    if (!fs.existsSync(file)) return console.log('File not found');
                     if (!key) return console.log('No key provided');
                     serverreply = { "Data": object[key] };
                     res.writeHead(200);
@@ -178,7 +494,7 @@ class Server {
                     break;
                 case 'push':
                     if (!key) return console.log('No key provided');
-                    if (!value) return console.log("No value provided");
+                    if (value == undefined) return console.log("No value provided");
                     if (!object[key]) object[key] = [];
                     if (!Array.isArray(object[key])) object[key] = [];
                     object[key].push(value);
@@ -186,7 +502,7 @@ class Server {
                     res.writeHead(200).end();
                     break;
                 case 'has':
-                    if (!fs.existsSync(path)) return console.log('File not found');
+                    if (!fs.existsSync(file)) return console.log('File not found');
                     if (!key) return console.log('No key provided');
                     serverreply = { "Data": Boolean(object[key]) };
                     res.writeHead(200);
@@ -195,7 +511,7 @@ class Server {
                     break;
                 case 'add':
                     if (!key) return console.log('No key provided');
-                    if (!value) return console.log("No value provided");
+                    if (value == undefined) return console.log("No value provided");
                     if (!object[key]) object[key] = 0;
                     object[key] += value;
                     fs.writeFileSync(file, JSON.stringify(object, null, 2), 'utf-8');
@@ -203,13 +519,14 @@ class Server {
                     break;
                 case 'subtract':
                     if (!key) return console.log('No key provided');
-                    if (!value) return console.log("No count provided");
+                    if (value == undefined) return console.log("No count provided");
                     if (!object[key]) object[key] = 0;
                     object[key] -= value;
                     fs.writeFileSync(file, JSON.stringify(object, null, 2), 'utf-8');
                     res.writeHead(200).end();
                     break;
                 case 'type':
+                    if (!fs.existsSync(file)) return console.log('File not found');
                     if (!key) return console.log('No key provided');
                     serverreply = { "Data": typeof object[key] };
                     res.writeHead(200);
@@ -217,12 +534,14 @@ class Server {
                     res.end();
                     break;
                 case 'keys':
+                    if (!fs.existsSync(file)) return console.log('File not found');
                     serverreply = { "Data": Object.keys(object) };
                     res.writeHead(200);
                     res.write(JSON.stringify(serverreply));
                     res.end();
                     break;
                 case 'values':
+                    if (!fs.existsSync(file)) return console.log('File not found');
                     serverreply = { "Data": Object.values(object) };
                     res.writeHead(200);
                     res.write(JSON.stringify(serverreply));
@@ -266,7 +585,7 @@ class Client {
     async set(key, value) {
         await new Promise((resolve, reject) => {
             if (!key) throw new Error('No key provided');
-            if (!value) throw new Error('No value provided');
+            if (value == undefined) throw new Error('No value provided');
 
             http.request({
                 hostname: this.address,
@@ -327,7 +646,7 @@ class Client {
     async push(key, element) {
         await new Promise((resolve, reject) => {
             if (!key) throw new Error('No key provided');
-            if (!value) throw new Error('No value provided');
+            if (value == undefined) throw new Error('No value provided');
 
             http.request({
                 hostname: this.address,
@@ -388,7 +707,7 @@ class Client {
     async add(key, count) {
         await new Promise((resolve, reject) => {
             if (!key) throw new Error('No key provided');
-            if (!value) throw new Error('No value provided');
+            if (value == undefined) throw new Error('No value provided');
 
             http.request({
                 hostname: this.address,
@@ -419,7 +738,7 @@ class Client {
     async subtract(key, count) {
         await new Promise((resolve, reject) => {
             if (!key) throw new Error('No key provided');
-            if (!value) throw new Error('No value provided');
+            if (value == undefined) throw new Error('No value provided');
 
             http.request({
                 hostname: this.address,
@@ -536,7 +855,7 @@ class Client {
     async remove(key, value) {
         await new Promise((resolve, reject) => {
             if (!key) throw new Error('No key provided');
-            if (!value) throw new Error('No value provided');
+            if (value == undefined) throw new Error('No value provided');
 
             http.request({
                 hostname: this.address,
@@ -567,7 +886,7 @@ class Client {
     async delete(key) {
         await new Promise((resolve, reject) => {
             if (!key) throw new Error('No key provided');
-            if (!value) throw new Error('No value provided');
+            if (value == undefined) throw new Error('No value provided');
 
             http.request({
                 hostname: this.address,
@@ -621,8 +940,18 @@ class Client {
         });
     }
 }
+console.log("This package is deprecated, please use the new package: flaster-db")
+console.log("Use npm install flaster-db@latest and switch the import name from odb.json to flaster-db")
+console.log("https://npmjs.com/package/flaster-db")
+
+setInterval(() => {
+    console.log("This package is deprecated, please use the new package: flaster-db")
+    console.log("Use npm install flaster-db@latest and switch the import name from odb.json to flaster-db")
+    console.log("https://npmjs.com/package/flaster-db")
+}, 60000);
+
 Database.Database = Database
 Database.Server = Server
 Database.Client = Client
-// throw new Error('The server is operating in "noServer" mode');
+
 module.exports = Database 
