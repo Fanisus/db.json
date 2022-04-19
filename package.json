@@ -1,7 +1,7 @@
 {
   "name": "odb.json",
-  "version": "2.0.1",
-  "description": "Database made with JSON",
+  "version": "2.1.9",
+  "description": "Deprecated. Use flaster-db",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -24,7 +24,18 @@
     "cloud-database",
     "cloud-json-database",
     "cloud-json-db",
-    "cloud-db"
+    "cloud-db",
+    "deep",
+    "deep-database",
+    "deep-json-database",
+    "nested",
+    "nested-database",
+    "nested-json-database",
+    "nested-json-db",
+    "nested-db",
+    "deep-nested",
+    "dot-notation",
+    "dot"
   ],
   "author": "Fanisus",
   "license": "ISC",
