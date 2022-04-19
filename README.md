@@ -1,24 +1,31 @@
 
 # odb.json
 
-A Database made with JSON
+THIS PACKAGE IS DEPRECATED. USE flaster-db
 
 ```bash
-npm i odb.json
+npm i odb.json@latest
 ```
 
-SMALL CHANGES MADE TO IMPORT
 ## Database Examples
 
 ```javascript
 const Database = require('odb.json')
-const db = new Database.Database('./Data.json', {
+//                                      Folder
+const db = new Database.Database('./Local-Database-Folder', {
     backup: {
         enabled: true,
-        name: 'backupfile.json',
-        interval: 600000,
-        path: './backupfolder'
-    }
+        name: 'backup.json',
+        path: './Backup-Local-Database-Folder',
+        interval: 900000,
+    },
+    memory: {
+        enabled: true,
+        saveinterval: 30000,
+    },
+    cli: true, // Type help in console for help
+    deep: true, // The dot notation that the world needs is here
+    file: 'Data.json' // The File to store Database
 })
 
 db.set("Data", "World");
@@ -53,6 +60,14 @@ db.keys(); // ["Just_a_number", "array"]
 db.values(); // 6, ["orange"]
 
 db.clear(); // {} 
+
+db.save(); // Saves the database
+
+db.size(); // Returns Database size
+
+db.reload(); // Reloads the Database from disk
+
+db.data(); // Returns the whole Database
 ```
 
 ## Server-side Database setup
@@ -116,16 +131,18 @@ db.clear(); // {}
 ## Change Log
 
 ```
-+ Promisified Full Database Class
-+ Added Server class
-+ Added Client class
++ Please check Database class. Changed where to give file and folder locations for it
++ Added in-Memory Database to Database class
++ Added CLI (Command Line Interface) to Database class
 + Added New functions to Database class 
-    + type
-    + keys
-    + values
-    + clear
-+ Fixed a bug where remove command doesn't save the changes
-+ Changed imports
+    + save()
+    + reload()
+    + data()
+    + size()
++ Added Typings
++ Bug Fixes (Fixed my mistake while setting data as 0, false, null throws error)
+- Removed my ugly console.logs from push
+- Fixed issue when using get or has throws an error when the value is not found
 ```
 
 ## Support
