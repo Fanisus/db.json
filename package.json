@@ -1,6 +1,6 @@
 {
   "name": "odb.json",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "odb.json is a database for storing and retrieving data",
   "main": "index.js",
   "scripts": {
