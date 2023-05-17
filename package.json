@@ -1,11 +1,12 @@
 {
   "name": "odb.json",
-  "version": "2.1.9",
-  "description": "Deprecated. Use flaster-db",
+  "version": "3.0.1",
+  "description": "odb.json is a database for storing and retrieving data",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test.js"
   },
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Fanisus/odb.json.git"
@@ -35,10 +36,15 @@
     "nested-db",
     "deep-nested",
     "dot-notation",
-    "dot"
+    "dot",
+    "flaster",
+    "flaster.db",
+    "flaster_db",
+    "flaster-db",
+    "flasterdb"
   ],
   "author": "Fanisus",
-  "license": "ISC",
+  "license": "GPL-3.0",
   "bugs": {
     "url": "https://github.com/Fanisus/odb.json/issues"
   },

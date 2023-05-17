@@ -1,4 +1,4 @@
-declare module 'odb.json' {
+declare module 'flaster-db' {
     export type ServerType = 'master'
     interface BackupOptions {
         /**

@@ -1,14 +1,7 @@
 const fs = require('fs');
 const http = require('http');
 
-const readline = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    historySize: 1000,
-    removeHistoryDuplicates: true
-})
-
-let file;
+// let file;
 
 class Database {
     constructor(folderPath, options) {
@@ -17,7 +10,7 @@ class Database {
             folderPath += '/'
         }
         this.options = options || {};
-        file = folderPath + this.options.file || "./db.json";
+        let file = folderPath + this.options?.file || "./db.json";
         if (!fs.existsSync(folderPath)) {
             fs.mkdirSync(folderPath, { recursive: true })
         }
@@ -26,15 +19,15 @@ class Database {
         }
         this.object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
         if (this.options?.memory?.enabled) {
-            if (!this.options.memory.saveinterval || isNaN(this.options.memory.saveinterval)) throw new Error("No saveinterval provided or save interval is not a number");
+            if (!this.options?.memory?.saveinterval || isNaN(this.options?.memory?.saveinterval)) throw new Error("No saveinterval provided or save interval is not a number");
             setInterval(() => {
                 fs.writeFileSync(file, JSON.stringify(this.object, null, 2), { encoding: 'utf-8' })
-            }, this.options.memory.saveinterval)
+            }, this.options?.memory?.saveinterval)
         }
         if (this.options?.backup?.enabled) {
-            let backupfilename = this.options.backup.name || `${new Date().toUTCString()}_Backup.json}`;
+            let backupfilename = this.options?.backup?.name || `${new Date().toUTCString()}_Backup.json}`;
             if (!backupfilename.includes('.')) throw new Error(backupfilename, "must contain the file extension")
-            let backuplocation = this.options.backup.path || './Database-Backups/';
+            let backuplocation = this.options?.backup?.path || './Database-Backups/';
             if (!fs.existsSync(backuplocation)) {
                 fs.mkdirSync(backuplocation);
             }
@@ -43,9 +36,15 @@ class Database {
             }
             setInterval(() => {
                 fs.writeFileSync(backuplocation + `${backupfilename}`, fs.readFileSync(file, { encoding: 'utf-8' }))
-            }, (this.options.backup.interval || 86400000));
+            }, (this.options?.backup?.interval || 86400000));
         }
-        if (this.options.cli) {
+        if (this.options?.cli) {
+            const readline = require('readline').createInterface({
+                input: process.stdin,
+                output: process.stdout,
+                historySize: 1000,
+                removeHistoryDuplicates: true
+            })
             let cli = true;
             console.log(`CLI for ${file} is Enabled. Use ${file} <command> <key> <value> to interact with the database.`)
             readline.on('line', async (line) => {
@@ -150,7 +149,7 @@ class Database {
             if (!key) throw new Error('No key provided');
             if (value == undefined) throw new Error("No value provided")
             if (!this.options?.memory?.enabled) this.object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
-            if (this.options.deep) {
+            if (this.options?.deep) {
                 const properties = key.split('.');
                 let index = 0
                 let dot;
@@ -179,7 +178,7 @@ class Database {
         return await new Promise((resolve, reject) => {
             if (!key) throw new Error('No key provided');
             if (!this.options?.memory?.enabled) this.object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
-            if (this.options.deep) {
+            if (this.options?.deep) {
                 const properties = key.split('.');
                 let index = 0
                 let dot;
@@ -204,7 +203,7 @@ class Database {
             if (!key) throw new Error('No key provided');
             if (value == undefined) throw new Error("No value provided")
             if (!this.options?.memory?.enabled) this.object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
-            if (this.options.deep) {
+            if (this.options?.deep) {
                 const properties = key.split('.');
                 let index = 0
                 let dot;
@@ -241,7 +240,7 @@ class Database {
         return await new Promise((resolve, reject) => {
             if (!key) throw new Error('No key provided');
             if (!this.options?.memory?.enabled) this.object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
-            if (this.options.deep) {
+            if (this.options?.deep) {
                 const properties = key.split('.');
                 let index = 0
                 let dot;
@@ -266,7 +265,7 @@ class Database {
             if (!key) throw new Error('No key provided');
             if (value == undefined) throw new Error("No value provided")
             if (!this.options?.memory?.enabled) this.object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
-            if (this.options.deep) {
+            if (this.options?.deep) {
                 const properties = key.split('.');
                 let index = 0
                 let dot;
@@ -298,7 +297,7 @@ class Database {
             if (!key) throw new Error('No key provided');
             if (value == undefined) throw new Error("No value provided")
             if (!this.options?.memory?.enabled) this.object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
-            if (this.options.deep) {
+            if (this.options?.deep) {
                 const properties = key.split('.');
                 let index = 0
                 let dot;
@@ -329,7 +328,7 @@ class Database {
         return await new Promise((resolve, reject) => {
             if (!key) throw new Error('No key provided');
             if (!this.options?.memory?.enabled) this.object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
-            if (this.options.deep) {
+            if (this.options?.deep) {
                 const properties = key.split('.');
                 let index = 0
                 let dot;
@@ -361,7 +360,7 @@ class Database {
             if (!key) throw new Error('No key provided');
             if (value == undefined) throw new Error("No value provided")
             if (!this.options?.memory?.enabled) this.object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
-            if (this.options.deep) {
+            if (this.options?.deep) {
                 const properties = key.split('.');
                 let index = 0
                 let dot;
@@ -394,7 +393,7 @@ class Database {
         await new Promise((resolve, reject) => {
             if (!key) throw new Error('No key provided');
             if (!this.options?.memory?.enabled) this.object = JSON.parse(fs.readFileSync(file, { encoding: 'utf-8' }))
-            if (this.options.deep) {
+            if (this.options?.deep) {
                 const properties = key.split('.');
                 let index = 0
                 let dot;
@@ -454,14 +453,14 @@ class Server {
         this.path = FolderPath || './Server-Database/';
         this.options = options || {};
         if (this.options == null || this.options == undefined) this.options = {};
-        this.port = this.options.port || 8000;
+        this.port = this.options?.port || 8000;
         if (!fs.existsSync(this.path)) {
             fs.mkdirSync(this.path, { recursive: true })
         }
         if (!this.path.endsWith('/')) this.path = this.path + '/'
-        if (this.options.port == null || !this.options.port) console.log(`Port is not specified in options. Using port ${this.port}`)
+        if (this.options?.port == null || !this.options?.port) console.log(`Port is not specified in options. Using port ${this.port}`)
         if (this.port > 65535 || this.port < 1) throw new Error("Port must be less than 65535 and greater than 1")
-        if (this.options.servertype == null || !this.options.servertype) throw new Error("Please Specify servertype")
+        if (this.options?.servertype == null || !this.options?.servertype) throw new Error("Please Specify servertype")
 
         http.createServer((req, res) => {
             let data = req.headers;
@@ -573,13 +572,13 @@ class Client {
     constructor(address, options) {
         this.options = options || {};
         this.address = address;
-        this.port = this.options.port;
+        this.port = this.options?.port;
         if (!address) throw new Error("Give Valid Address or address");
         if (this.port == null || !this.port) throw new Error(`Port is not specified in options.`);
         if (this.port > 65535 || this.port < 1) throw new Error("Port must be less than 65535 and greater than 1");
-        if (!this.options.dbname) throw new Error("Please specify dbname. Just throm in a random dbname, Will be used in future");
-        if (!this.options.username) throw new Error("Please specify username. Just throw in a random name, Will be used in future");
-        if (!this.options.password) throw new Error("Please specify password. Just throw in a random password, Will be used in future");
+        if (!this.options?.dbname) throw new Error("Please specify dbname. Just throm in a random dbname, Will be used in future");
+        if (!this.options?.username) throw new Error("Please specify username. Just throw in a random name, Will be used in future");
+        if (!this.options?.password) throw new Error("Please specify password. Just throw in a random password, Will be used in future");
     }
 
     async set(key, value) {
@@ -593,9 +592,9 @@ class Client {
                 method: 'POST',
                 headers: {
                     'command': 'set',
-                    'username': this.options.username,
-                    'password': this.options.password,
-                    'dbname': this.options.dbname,
+                    'username': this.options?.username,
+                    'password': this.options?.password,
+                    'dbname': this.options?.dbname,
                     'key': key,
                     'value': value
                 }
@@ -622,9 +621,9 @@ class Client {
                 method: 'GET',
                 headers: {
                     'command': 'get',
-                    'username': this.options.username,
-                    'password': this.options.password,
-                    'dbname': this.options.dbname,
+                    'username': this.options?.username,
+                    'password': this.options?.password,
+                    'dbname': this.options?.dbname,
                     'key': key
                 }
             }, (res) => {
@@ -654,9 +653,9 @@ class Client {
                 method: 'POST',
                 headers: {
                     'command': 'set',
-                    'username': this.options.username,
-                    'password': this.options.password,
-                    'dbname': this.options.dbname,
+                    'username': this.options?.username,
+                    'password': this.options?.password,
+                    'dbname': this.options?.dbname,
                     'key': key,
                     'value': element
                 }
@@ -683,9 +682,9 @@ class Client {
                 method: 'GET',
                 headers: {
                     'command': 'get',
-                    'username': this.options.username,
-                    'password': this.options.password,
-                    'dbname': this.options.dbname,
+                    'username': this.options?.username,
+                    'password': this.options?.password,
+                    'dbname': this.options?.dbname,
                     'key': key
                 }
             }, (res) => {
@@ -715,9 +714,9 @@ class Client {
                 method: 'POST',
                 headers: {
                     'command': 'set',
-                    'username': this.options.username,
-                    'password': this.options.password,
-                    'dbname': this.options.dbname,
+                    'username': this.options?.username,
+                    'password': this.options?.password,
+                    'dbname': this.options?.dbname,
                     'key': key,
                     'value': count
                 }
@@ -746,9 +745,9 @@ class Client {
                 method: 'POST',
                 headers: {
                     'command': 'set',
-                    'username': this.options.username,
-                    'password': this.options.password,
-                    'dbname': this.options.dbname,
+                    'username': this.options?.username,
+                    'password': this.options?.password,
+                    'dbname': this.options?.dbname,
                     'key': key,
                     'value': count
                 }
@@ -775,9 +774,9 @@ class Client {
                 method: 'GET',
                 headers: {
                     'command': 'type',
-                    'username': this.options.username,
-                    'password': this.options.password,
-                    'dbname': this.options.dbname,
+                    'username': this.options?.username,
+                    'password': this.options?.password,
+                    'dbname': this.options?.dbname,
                     'key': key
                 }
             }, (res) => {
@@ -804,9 +803,9 @@ class Client {
                 method: 'GET',
                 headers: {
                     'command': 'keys',
-                    'username': this.options.username,
-                    'password': this.options.password,
-                    'dbname': this.options.dbname
+                    'username': this.options?.username,
+                    'password': this.options?.password,
+                    'dbname': this.options?.dbname
                 }
             }, (res) => {
                 let data = ''
@@ -832,9 +831,9 @@ class Client {
                 method: 'GET',
                 headers: {
                     'command': 'values',
-                    'username': this.options.username,
-                    'password': this.options.password,
-                    'dbname': this.options.dbname
+                    'username': this.options?.username,
+                    'password': this.options?.password,
+                    'dbname': this.options?.dbname
                 }
             }, (res) => {
                 let data = ''
@@ -863,9 +862,9 @@ class Client {
                 method: 'POST',
                 headers: {
                     'command': 'set',
-                    'username': this.options.username,
-                    'password': this.options.password,
-                    'dbname': this.options.dbname,
+                    'username': this.options?.username,
+                    'password': this.options?.password,
+                    'dbname': this.options?.dbname,
                     'key': key,
                     'value': value
                 }
@@ -894,9 +893,9 @@ class Client {
                 method: 'POST',
                 headers: {
                     'command': 'set',
-                    'username': this.options.username,
-                    'password': this.options.password,
-                    'dbname': this.options.dbname,
+                    'username': this.options?.username,
+                    'password': this.options?.password,
+                    'dbname': this.options?.dbname,
                     'key': key
                 }
             }, (res) => {
@@ -921,9 +920,9 @@ class Client {
                 method: 'POST',
                 headers: {
                     'command': 'clear',
-                    'username': this.options.username,
-                    'password': this.options.password,
-                    'dbname': this.options.dbname,
+                    'username': this.options?.username,
+                    'password': this.options?.password,
+                    'dbname': this.options?.dbname,
                 }
             }, (res) => {
                 let data = ''
@@ -940,15 +939,6 @@ class Client {
         });
     }
 }
-console.log("This package is deprecated, please use the new package: flaster-db")
-console.log("Use npm install flaster-db@latest and switch the import name from odb.json to flaster-db")
-console.log("https://npmjs.com/package/flaster-db")
-
-setInterval(() => {
-    console.log("This package is deprecated, please use the new package: flaster-db")
-    console.log("Use npm install flaster-db@latest and switch the import name from odb.json to flaster-db")
-    console.log("https://npmjs.com/package/flaster-db")
-}, 60000);
 
 Database.Database = Database
 Database.Server = Server

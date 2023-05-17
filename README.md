@@ -1,7 +1,8 @@
 
 # odb.json
 
-THIS PACKAGE IS DEPRECATED. USE flaster-db
+Performance at its best!
+Uses JSON to store data.
 
 ```bash
 npm i odb.json@latest
@@ -23,7 +24,7 @@ const db = new Database.Database('./Local-Database-Folder', {
         enabled: true,
         saveinterval: 30000,
     },
-    cli: true, // Type help in console for help
+    cli: true, // When true type help in console for help
     deep: true, // The dot notation that the world needs is here
     file: 'Data.json' // The File to store Database
 })
@@ -140,14 +141,21 @@ db.clear(); // {}
     + data()
     + size()
 + Added Typings
-+ Bug Fixes (Fixed my mistake while setting data as 0, false, null throws error)
++ Bug Fixes (Fixed my mistake while setting data as 0, false, null throws error), (Fixed the ability to type in console even while the cli is disabled), (Fixed saving to same file when using 2 instances of local database)
 - Removed my ugly console.logs from push
 - Fixed issue when using get or has throws an error when the value is not found
 ```
 
+## Upcoming Features
+
+```
++ Ability to use a different separator for deep (currently ".")
++ Ability to make use of deep in the keys and values commands
+```
+
 ## Support
 
-If you have any doubts join my [Discord](https://discord.gg/UUyKfuCVDx) => [odb.json](https://discord.gg/UUyKfuCVDx)
+If you have any doubts join my [Discord](https://discord.gg/bRbCTEHmyT) => [odb.json](https://discord.gg/bRbCTEHmyT)
 
 ## Authors
 
