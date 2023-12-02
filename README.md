@@ -1,7 +1,6 @@
 
 # odb.json
 
-Performance at its best!
 Uses JSON to store data.
 
 ```bash
